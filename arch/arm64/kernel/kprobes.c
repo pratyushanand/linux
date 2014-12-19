@@ -249,7 +249,7 @@ static void __kprobes setup_singlestep(struct kprobe *p,
 		/* IRQs and single stepping do not mix well. */
 		kprobes_save_local_irqflag(regs);
 		kernel_enable_single_step(regs);
-		instruction_pointer(regs) = slot;
+		instruction_pointer_set(regs, slot);
 	} else	{
 		/* insn simulation */
 		arch_simulate_insn(p, regs);
@@ -290,7 +290,7 @@ post_kprobe_handler(struct kprobe_ctlblk *kcb, struct pt_regs *regs)
 
 	/* return addr restore if non-branching insn */
 	if (cur->ainsn.restore.type == RESTORE_PC) {
-		instruction_pointer(regs) = cur->ainsn.restore.addr;
+		instruction_pointer_set(regs, cur->ainsn.restore.addr);
 		if (!instruction_pointer(regs))
 			BUG();
 	}
@@ -327,7 +327,7 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, unsigned int fsr)
 		 * and allow the page fault handler to continue as a
 		 * normal page fault.
 		 */
-		instruction_pointer(regs) = (unsigned long)cur->addr;
+		instruction_pointer_set(regs, (unsigned long)cur->addr);
 		if (!instruction_pointer(regs))
 			BUG();
 		if (kcb->kprobe_status == KPROBE_REENTER)
@@ -481,7 +481,7 @@ int __kprobes setjmp_pre_handler(struct kprobe *p, struct pt_regs *regs)
 	memcpy(kcb->jprobes_stack, (void *)stack_ptr,
 	       MIN_STACK_SIZE(stack_ptr));
 
-	instruction_pointer(regs) = (long)jp->entry;
+	instruction_pointer_set(regs, (long)jp->entry);
 	preempt_disable();
 	return 1;
 }
@@ -586,7 +586,7 @@ void __kprobes __used *trampoline_probe_handler(struct pt_regs *regs)
 
 	kretprobe_assert(ri, orig_ret_addr, trampoline_address);
 	/* restore the original return address */
-	instruction_pointer(regs) = orig_ret_addr;
+	instruction_pointer_set(regs, orig_ret_addr);
 	reset_current_kprobe();
 	kretprobe_hash_unlock(current, &flags);
 

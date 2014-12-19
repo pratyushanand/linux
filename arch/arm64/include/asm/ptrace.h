@@ -145,9 +145,6 @@ struct pt_regs {
 #define fast_interrupts_enabled(regs) \
 	(!((regs)->pstate & PSR_F_BIT))
 
-#define user_stack_pointer(regs) \
-	(!compat_user_mode(regs) ? (regs)->sp : (regs)->compat_sp)
-
 /**
  * regs_get_register() - get register value from its offset
  * @regs:	   pt_regs from which register value is gotten
@@ -206,8 +203,33 @@ static inline int valid_user_regs(struct user_pt_regs *regs)
 	return 0;
 }
 
-#define instruction_pointer(regs)	((regs)->pc)
+#define GET_USP(regs) \
+	(!compat_user_mode(regs) ? (regs)->sp : (regs)->compat_sp)
 
+#define SET_USP(regs, val)				\
+	do {						\
+		if (compat_user_mode(regs))		\
+			(regs)->compat_sp = val;	\
+		else					\
+			(regs)->sp = val;		\
+	} while (0)
+
+#define GET_FP(regs) \
+	(!compat_user_mode(regs) ? (regs)->regs[29] : (regs)->compat_fp)
+
+#define SET_FP(regs, val)				\
+	do {						\
+		if (compat_user_mode(regs))		\
+			(regs)->compat_fp = val;	\
+		else					\
+			(regs)->regs[29] = val;		\
+	} while (0)
+
+#include <asm-generic/ptrace.h>
+
+#define stack_pointer(regs)		((regs)->sp)
+
+#undef profile_pc
 extern unsigned long profile_pc(struct pt_regs *regs);
 
 #endif /* __ASSEMBLY__ */

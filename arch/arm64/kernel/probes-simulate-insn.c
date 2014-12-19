@@ -88,7 +88,7 @@ simulate_adr_adrp(u32 opcode, long addr, struct pt_regs *regs)
 
 	regs->regs[xn] = val;
 
-	instruction_pointer(regs) += 4;
+	instruction_pointer_set(regs, instruction_pointer(regs) + 4);
 }
 
 void __kprobes
@@ -100,7 +100,7 @@ simulate_b_bl(u32 opcode, long addr, struct pt_regs *regs)
 	if (opcode & (1 << 31))
 		regs->regs[30] = addr + 4;
 
-	instruction_pointer(regs) = addr + disp;
+	instruction_pointer_set(regs, addr + disp);
 }
 
 void __kprobes
@@ -111,7 +111,7 @@ simulate_b_cond(u32 opcode, long addr, struct pt_regs *regs)
 	if (opcode_condition_checks[opcode & 0xf](regs->pstate & 0xffffffff))
 		disp = bcond_displacement(opcode);
 
-	instruction_pointer(regs) = addr + disp;
+	instruction_pointer_set(regs, addr + disp);
 }
 
 void __kprobes
@@ -123,7 +123,7 @@ simulate_br_blr_ret(u32 opcode, long addr, struct pt_regs *regs)
 	if (((opcode >> 21) & 0x3) == 1)
 		regs->regs[30] = addr + 4;
 
-	instruction_pointer(regs) = regs->regs[xn];
+	instruction_pointer_set(regs, regs->regs[xn]);
 }
 
 void __kprobes
@@ -138,7 +138,8 @@ simulate_cbz_cbnz(u32 opcode, long addr, struct pt_regs *regs)
 		if (check_cbz(opcode, regs))
 			disp = cbz_displacement(opcode);
 	}
-	instruction_pointer(regs) = addr + disp;
+
+	instruction_pointer_set(regs, addr + disp);
 }
 
 void __kprobes
@@ -153,7 +154,8 @@ simulate_tbz_tbnz(u32 opcode, long addr, struct pt_regs *regs)
 		if (check_tbz(opcode, regs))
 			disp = tbz_displacement(opcode);
 	}
-	instruction_pointer(regs) = addr + disp;
+
+	instruction_pointer_set(regs, addr + disp);
 }
 
 void __kprobes
@@ -170,7 +172,7 @@ simulate_ldr_literal(u32 opcode, long addr, struct pt_regs *regs)
 	else			/* w0-w31 */
 		*(u32 *) (&regs->regs[xn]) = (*(u32 *) (load_addr));
 
-	instruction_pointer(regs) += 4;
+	instruction_pointer_set(regs, instruction_pointer(regs) + 4);
 }
 
 void __kprobes
@@ -183,5 +185,5 @@ simulate_ldrsw_literal(u32 opcode, long addr, struct pt_regs *regs)
 	load_addr = (s32 *) (addr + disp);
 	regs->regs[xn] = *load_addr;
 
-	instruction_pointer(regs) += 4;
+	instruction_pointer_set(regs, instruction_pointer(regs) + 4);
 }
