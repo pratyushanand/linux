@@ -324,8 +324,18 @@ static int brk_handler(unsigned long addr, unsigned int esr,
 		       struct pt_regs *regs)
 {
 	siginfo_t info;
+	bool handler_found = false;
 
-	if (user_mode(regs)) {
+#ifdef	CONFIG_KPROBES
+	if ((esr & BRK64_ESR_MASK) == BRK64_ESR_KPROBES) {
+		if (kprobe_breakpoint_handler(regs, esr) == DBG_HOOK_HANDLED)
+			handler_found = true;
+	}
+#endif
+	if (!handler_found && call_break_hook(regs, esr) == DBG_HOOK_HANDLED)
+		handler_found = true;
+
+	if (!handler_found && user_mode(regs)) {
 		info = (siginfo_t) {
 			.si_signo = SIGTRAP,
 			.si_errno = 0,
@@ -334,14 +344,7 @@ static int brk_handler(unsigned long addr, unsigned int esr,
 		};
 
 		force_sig_info(SIGTRAP, &info, current);
-	}
-#ifdef	CONFIG_KPROBES
-	else if ((esr & BRK64_ESR_MASK) == BRK64_ESR_KPROBES) {
-		if (kprobe_breakpoint_handler(regs, esr) != DBG_HOOK_HANDLED)
-			return -EFAULT;
-	}
-#endif
-	else if (call_break_hook(regs, esr) != DBG_HOOK_HANDLED) {
+	} else if (!handler_found) {
 		pr_warn("Unexpected kernel BRK exception at EL1\n");
 		return -EFAULT;
 	}
