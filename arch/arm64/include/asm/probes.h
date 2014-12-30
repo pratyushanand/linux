@@ -21,6 +21,7 @@ struct kprobe;
 struct arch_specific_insn;
 
 typedef u32 kprobe_opcode_t;
+typedef u32 uprobe_opcode_t;
 typedef void (kprobes_handler_t) (u32 opcode, long addr, struct pt_regs *);
 
 enum pc_restore_type {

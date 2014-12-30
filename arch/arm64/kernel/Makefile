@@ -41,6 +41,8 @@ arm64-obj-$(CONFIG_KPROBES)		+= kprobes.o kprobes-arm64.o		\
 					   kprobes_trampoline.o			\
 					   probes-simulate-insn.o
 arm64-obj-$(CONFIG_EFI)			+= efi.o efi-entry.stub.o
+arm64-obj-$(CONFIG_UPROBES)		+= uprobes.o kprobes-arm64.o		\
+					   probes-simulate-insn.o
 arm64-obj-$(CONFIG_PCI)			+= pci.o
 arm64-obj-$(CONFIG_ARMV8_DEPRECATED)	+= armv8_deprecated.o
 arm64-obj-$(CONFIG_ACPI)		+= acpi.o
