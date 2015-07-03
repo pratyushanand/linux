@@ -29,6 +29,7 @@
 #include <asm/system_misc.h>
 #include <asm/insn.h>
 #include <asm/uaccess.h>
+#include <asm-generic/sections.h>
 
 #include "kprobes-arm64.h"
 
@@ -610,6 +611,14 @@ void __kprobes arch_prepare_kretprobe(struct kretprobe_instance *ri,
 int __kprobes arch_trampoline_kprobe(struct kprobe *p)
 {
 	return 0;
+}
+
+bool arch_within_kprobe_blacklist(unsigned long addr)
+{
+	return  (addr >= (unsigned long)__kprobes_text_start &&
+		 addr < (unsigned long)__kprobes_text_end) ||
+		(addr >= (unsigned long)__entry_text_start &&
+		 addr < (unsigned long)__entry_text_end);
 }
 
 int __init arch_init_kprobes(void)
