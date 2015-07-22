@@ -252,7 +252,7 @@ static int fpregs_active(struct task_struct *target,
 }
 #endif
 
-const struct pt_regs_offset regoffset_table[] = {
+const struct pt_regs_offset regs_offset_table[] = {
 	REGS_OFFSET_NAME(pc),
 	REGS_OFFSET_NAME(sr),
 	REGS_OFFSET_NAME(syscall_nr),
