@@ -51,45 +51,38 @@ enum x86_regset {
 	REGSET_IOPERM32,
 };
 
-struct pt_regs_offset {
-	const char *name;
-	int offset;
-};
-
-#define REG_OFFSET_NAME(r) {.name = #r, .offset = offsetof(struct pt_regs, r)}
-#define REG_OFFSET_END {.name = NULL, .offset = 0}
 
 static const struct pt_regs_offset regoffset_table[] = {
 #ifdef CONFIG_X86_64
-	REG_OFFSET_NAME(r15),
-	REG_OFFSET_NAME(r14),
-	REG_OFFSET_NAME(r13),
-	REG_OFFSET_NAME(r12),
-	REG_OFFSET_NAME(r11),
-	REG_OFFSET_NAME(r10),
-	REG_OFFSET_NAME(r9),
-	REG_OFFSET_NAME(r8),
+	REGS_OFFSET_NAME(r15),
+	REGS_OFFSET_NAME(r14),
+	REGS_OFFSET_NAME(r13),
+	REGS_OFFSET_NAME(r12),
+	REGS_OFFSET_NAME(r11),
+	REGS_OFFSET_NAME(r10),
+	REGS_OFFSET_NAME(r9),
+	REGS_OFFSET_NAME(r8),
 #endif
-	REG_OFFSET_NAME(bx),
-	REG_OFFSET_NAME(cx),
-	REG_OFFSET_NAME(dx),
-	REG_OFFSET_NAME(si),
-	REG_OFFSET_NAME(di),
-	REG_OFFSET_NAME(bp),
-	REG_OFFSET_NAME(ax),
+	REGS_OFFSET_NAME(bx),
+	REGS_OFFSET_NAME(cx),
+	REGS_OFFSET_NAME(dx),
+	REGS_OFFSET_NAME(si),
+	REGS_OFFSET_NAME(di),
+	REGS_OFFSET_NAME(bp),
+	REGS_OFFSET_NAME(ax),
 #ifdef CONFIG_X86_32
-	REG_OFFSET_NAME(ds),
-	REG_OFFSET_NAME(es),
-	REG_OFFSET_NAME(fs),
-	REG_OFFSET_NAME(gs),
+	REGS_OFFSET_NAME(ds),
+	REGS_OFFSET_NAME(es),
+	REGS_OFFSET_NAME(fs),
+	REGS_OFFSET_NAME(gs),
 #endif
-	REG_OFFSET_NAME(orig_ax),
-	REG_OFFSET_NAME(ip),
-	REG_OFFSET_NAME(cs),
-	REG_OFFSET_NAME(flags),
-	REG_OFFSET_NAME(sp),
-	REG_OFFSET_NAME(ss),
-	REG_OFFSET_END,
+	REGS_OFFSET_NAME(orig_ax),
+	REGS_OFFSET_NAME(ip),
+	REGS_OFFSET_NAME(cs),
+	REGS_OFFSET_NAME(flags),
+	REGS_OFFSET_NAME(sp),
+	REGS_OFFSET_NAME(ss),
+	REGS_OFFSET_END,
 };
 
 /**

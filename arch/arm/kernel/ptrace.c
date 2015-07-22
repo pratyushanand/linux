@@ -59,14 +59,9 @@
 #define BREAKINST_THUMB	0xde01
 #endif
 
-struct pt_regs_offset {
-	const char *name;
-	int offset;
-};
 
 #define REG_OFFSET_NAME(r) \
 	{.name = #r, .offset = offsetof(struct pt_regs, ARM_##r)}
-#define REG_OFFSET_END {.name = NULL, .offset = 0}
 
 static const struct pt_regs_offset regoffset_table[] = {
 	REG_OFFSET_NAME(r0),
@@ -87,7 +82,7 @@ static const struct pt_regs_offset regoffset_table[] = {
 	REG_OFFSET_NAME(pc),
 	REG_OFFSET_NAME(cpsr),
 	REG_OFFSET_NAME(ORIG_r0),
-	REG_OFFSET_END,
+	REGS_OFFSET_END,
 };
 
 /**

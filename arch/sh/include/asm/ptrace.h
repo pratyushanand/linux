@@ -23,17 +23,10 @@
 /*
  * kprobe-based event tracer support
  */
-struct pt_regs_offset {
-	const char *name;
-	int offset;
-};
-
-#define REG_OFFSET_NAME(r) {.name = #r, .offset = offsetof(struct pt_regs, r)}
-#define REGS_OFFSET_NAME(num)	\
+#define REG_OFFSET_NAME(num)	\
 	{.name = __stringify(r##num), .offset = offsetof(struct pt_regs, regs[num])}
 #define TREGS_OFFSET_NAME(num)	\
 	{.name = __stringify(tr##num), .offset = offsetof(struct pt_regs, tregs[num])}
-#define REG_OFFSET_END {.name = NULL, .offset = 0}
 
 /* Query offset/name of register from its name/offset */
 extern int regs_query_register_offset(const char *name);

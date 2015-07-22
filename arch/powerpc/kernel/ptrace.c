@@ -52,17 +52,10 @@
 #define PARAMETER_SAVE_AREA_OFFSET	48  /* bytes */
 #endif
 
-struct pt_regs_offset {
-	const char *name;
-	int offset;
-};
-
 #define STR(s)	#s			/* convert to string */
-#define REG_OFFSET_NAME(r) {.name = #r, .offset = offsetof(struct pt_regs, r)}
 #define GPR_OFFSET_NAME(num)	\
 	{.name = STR(r##num), .offset = offsetof(struct pt_regs, gpr[num])}, \
 	{.name = STR(gpr##num), .offset = offsetof(struct pt_regs, gpr[num])}
-#define REG_OFFSET_END {.name = NULL, .offset = 0}
 
 static const struct pt_regs_offset regoffset_table[] = {
 	GPR_OFFSET_NAME(0),
@@ -97,21 +90,21 @@ static const struct pt_regs_offset regoffset_table[] = {
 	GPR_OFFSET_NAME(29),
 	GPR_OFFSET_NAME(30),
 	GPR_OFFSET_NAME(31),
-	REG_OFFSET_NAME(nip),
-	REG_OFFSET_NAME(msr),
-	REG_OFFSET_NAME(ctr),
-	REG_OFFSET_NAME(link),
-	REG_OFFSET_NAME(xer),
-	REG_OFFSET_NAME(ccr),
+	REGS_OFFSET_NAME(nip),
+	REGS_OFFSET_NAME(msr),
+	REGS_OFFSET_NAME(ctr),
+	REGS_OFFSET_NAME(link),
+	REGS_OFFSET_NAME(xer),
+	REGS_OFFSET_NAME(ccr),
 #ifdef CONFIG_PPC64
-	REG_OFFSET_NAME(softe),
+	REGS_OFFSET_NAME(softe),
 #else
-	REG_OFFSET_NAME(mq),
+	REGS_OFFSET_NAME(mq),
 #endif
-	REG_OFFSET_NAME(trap),
-	REG_OFFSET_NAME(dar),
-	REG_OFFSET_NAME(dsisr),
-	REG_OFFSET_END,
+	REGS_OFFSET_NAME(trap),
+	REGS_OFFSET_NAME(dar),
+	REGS_OFFSET_NAME(dsisr),
+	REGS_OFFSET_END,
 };
 
 /**

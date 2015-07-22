@@ -406,4 +406,16 @@ extern int task_current_syscall(struct task_struct *target, long *callno,
 				unsigned long args[6], unsigned int maxargs,
 				unsigned long *sp, unsigned long *pc);
 
+#ifdef	CONFIG_HAVE_REGS_AND_STACK_ACCESS_API
+
+#define REGS_OFFSET_NAME(r) {.name = #r, .offset = offsetof(struct pt_regs, r)}
+#define REGS_OFFSET_END {.name = NULL, .offset = 0}
+
+struct pt_regs_offset {
+	const char *name;
+	int offset;
+};
+
+#endif	/* CONFIG_HAVE_REGS_AND_STACK_ACCESS_API */
+
 #endif
