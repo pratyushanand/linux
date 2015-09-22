@@ -18,6 +18,7 @@
 #include <linux/linkage.h>
 
 #include <asm/assembler.h>
+#include <asm/virt.h>
 
 /*
  * u64 kvm_call_hyp(void *hypfn, ...);
@@ -33,11 +34,8 @@
  * in Hyp mode (see init_hyp_mode in arch/arm/kvm/arm.c).  Return values are
  * passed in x0.
  *
- * A function pointer with a value of 0 has a special meaning, and is
- * used to implement __hyp_get_vectors in the same way as in
- * arch/arm64/kernel/hyp_stub.S.
  */
 ENTRY(kvm_call_hyp)
-	hvc	#0
+	hvc	#HVC_CALL_HYP
 	ret
 ENDPROC(kvm_call_hyp)
