@@ -58,10 +58,27 @@ el1_sync:				// Guest trapped into EL2
 	cmp	x18, #HVC_GET_VECTORS
 	b.ne	1f
 	mrs	x0, vbar_el2
-	b	2f
 
-1:	/* Default to HVC_CALL_HYP. */
+	b	do_eret
+       /* jump into trampoline code */
+1:	cmp     x18, #HVC_RESET_CPU
+	b.ne    2f
+	/*
+	 * Entry point is:
+	 *      TRAMPOLINE_VA
+	 *      + (__kvm_hyp_reset - (__hyp_idmap_text_start & PAGE_MASK))
+	 */
+	adrp    x2, __kvm_hyp_reset
+	add     x2, x2, #:lo12:__kvm_hyp_reset
+	adrp    x3, __hyp_idmap_text_start
+	add     x3, x3, #:lo12:__hyp_idmap_text_start
+	and     x3, x3, PAGE_MASK
+	sub     x2, x2, x3
+	ldr     x3, =TRAMPOLINE_VA
+	add     x2, x2, x3
+	br      x2                              // no return
 
+2:     /* Default to HVC_CALL_HYP. */
 	stp	lr, xzr, [sp, #-16]!
 
 	/*
@@ -75,7 +92,9 @@ el1_sync:				// Guest trapped into EL2
 	blr	lr
 
 	ldp	lr, xzr, [sp], #16
-2:	eret
+
+do_eret:
+	eret
 
 el1_trap:
 	/*

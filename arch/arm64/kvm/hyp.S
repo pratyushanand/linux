@@ -39,3 +39,8 @@ ENTRY(kvm_call_hyp)
 	hvc	#HVC_CALL_HYP
 	ret
 ENDPROC(kvm_call_hyp)
+
+ENTRY(kvm_call_reset)
+	hvc	#HVC_RESET_CPU
+	ret
+ENDPROC(kvm_call_reset)
