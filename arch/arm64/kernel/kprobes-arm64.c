@@ -54,7 +54,7 @@ static bool __kprobes aarch64_insn_is_steppable(u32 insn)
  *   INSN_GOOD         If instruction is supported and uses instruction slot,
  *   INSN_GOOD_NO_SLOT If instruction is supported but doesn't use its slot.
  */
-static enum kprobe_insn __kprobes
+enum kprobe_insn __kprobes
 arm_probe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi)
 {
 	/*
