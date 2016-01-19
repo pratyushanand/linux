@@ -534,6 +534,11 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
 	return 1;
 }
 
+void __kprobes __used *trampoline_probe_handler(struct pt_regs *regs)
+{
+	return (void *) 0;
+}
+
 int __init arch_init_kprobes(void)
 {
 	return 0;
