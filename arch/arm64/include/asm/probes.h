@@ -15,11 +15,12 @@
 #ifndef _ARM_PROBES_H
 #define _ARM_PROBES_H
 
+#include <asm/opcodes.h>
+
 struct kprobe;
 struct arch_specific_insn;
 
 typedef u32 kprobe_opcode_t;
-typedef unsigned long (kprobes_pstate_check_t)(unsigned long);
 typedef void (kprobes_handler_t) (u32 opcode, long addr, struct pt_regs *);
 
 enum pc_restore_type {
@@ -35,7 +36,7 @@ struct kprobe_pc_restore {
 /* architecture specific copy of original instruction */
 struct arch_specific_insn {
 	kprobe_opcode_t *insn;
-	kprobes_pstate_check_t *pstate_cc;
+	pstate_check_t *pstate_cc;
 	kprobes_handler_t *handler;
 	/* restore address after step xol */
 	struct kprobe_pc_restore restore;
