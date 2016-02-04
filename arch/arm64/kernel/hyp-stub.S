@@ -68,7 +68,18 @@ el1_sync:
 	mov	x1, x3
 	br	x4				// no return
 
-3:	cmp	x0, #HVC_RESET_VECTORS
+3:	cmp	x18, #HVC_CALL_FUNC
+	b.ne	4f
+	mov	x18, lr
+	mov	lr, x0
+	mov	x0, x1
+	mov	x1, x2
+	mov	x2, x3
+	blr	lr
+	mov	lr, x18
+	eret
+
+4:	cmp	x0, #HVC_RESET_VECTORS
 	beq	9f				// Nothing to reset!
 
 	/* Someone called kvm_call_hyp() against the hyp-stub... */
