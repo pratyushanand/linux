@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Original Code by Pavel Labath <test.tberghammer@gmail.com>
+ * Original Code by Pavel Labath <labath@google.com>
  *
  * Code modified by Pratyush Anand <panand@redhat.com>
  * for testing different byte select for each access size.
@@ -109,7 +109,7 @@ static bool set_watchpoint(pid_t pid, int size, int wp)
 	return false;
 }
 
-static bool run_test(int size, int wr, int wp)
+static bool run_test(int wr_size, int wp_size, int wr, int wp)
 {
 	int status;
 	siginfo_t siginfo;
@@ -121,7 +121,7 @@ static bool run_test(int size, int wr, int wp)
 		return false;
 	}
 	if (pid == 0)
-		child(size, wr);
+		child(wr_size, wr);
 
 	wpid = waitpid(pid, &status, __WALL);
 	if (wpid != pid) {
@@ -137,7 +137,7 @@ static bool run_test(int size, int wr, int wp)
 		return false;
 	}
 
-	if (!set_watchpoint(pid, MIN(size, 8), wp))
+	if (!set_watchpoint(pid, wp_size, wp))
 		return false;
 
 	if (ptrace(PTRACE_CONT, pid, NULL, NULL) < 0) {
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
 		for (wr = 0; wr <= 32; wr = wr + size) {
 			for (wp = wr - size; wp <= wr + size; wp = wp + size) {
 				printf("Test size = %d write offset = %d watchpoint offset = %d\t", size, wr, wp);
-				result = run_test(size, wr, wp);
+				result = run_test(size, MIN(size, 8), wr, wp);
 				if ((result && wr == wp) || (!result && wr != wp)) {
 					printf("[OK]\n");
 					ksft_inc_pass_cnt();
@@ -212,6 +212,19 @@ int main(int argc, char **argv)
 					succeeded = false;
 				}
 			}
+		}
+	}
+
+	for (size = 1; size <= 32; size = size*2) {
+		printf("Test size = %d write offset = %d watchpoint offset = -8\t", size, -size);
+
+		if (run_test(size, 8, -size, -8)) {
+			printf("[OK]\n");
+			ksft_inc_pass_cnt();
+		} else {
+			printf("[FAILED]\n");
+			ksft_inc_fail_cnt();
+			succeeded = false;
 		}
 	}
 
