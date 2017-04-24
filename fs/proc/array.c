@@ -587,10 +587,12 @@ int proc_pid_statm(struct seq_file *m, struct pid_namespace *ns,
 			struct pid *pid, struct task_struct *task)
 {
 	unsigned long size = 0, resident = 0, shared = 0, text = 0, data = 0;
+	unsigned long max_rss = 0;
 	struct mm_struct *mm = get_task_mm(task);
 
 	if (mm) {
-		size = task_statm(mm, &shared, &text, &data, &resident);
+		size = task_statm(mm, &shared, &text, &data, &resident,
+				&max_rss);
 		mmput(mm);
 	}
 	/*
@@ -606,6 +608,7 @@ int proc_pid_statm(struct seq_file *m, struct pid_namespace *ns,
 	seq_put_decimal_ull(m, " ", 0);
 	seq_put_decimal_ull(m, " ", data);
 	seq_put_decimal_ull(m, " ", 0);
+	seq_put_decimal_ull(m, " ", max_rss);
 	seq_putc(m, '\n');
 
 	return 0;

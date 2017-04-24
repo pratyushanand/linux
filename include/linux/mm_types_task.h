@@ -45,11 +45,13 @@ enum {
 struct task_rss_stat {
 	int events;	/* for synchronization threshold */
 	int count[NR_MM_COUNTERS];
+	int max[NR_MM_COUNTERS];
 };
 #endif /* USE_SPLIT_PTE_PTLOCKS */
 
 struct mm_rss_stat {
 	atomic_long_t count[NR_MM_COUNTERS];
+	atomic_long_t max[NR_MM_COUNTERS];
 };
 
 struct page_frag {

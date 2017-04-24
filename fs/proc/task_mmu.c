@@ -91,7 +91,8 @@ unsigned long task_vsize(struct mm_struct *mm)
 
 unsigned long task_statm(struct mm_struct *mm,
 			 unsigned long *shared, unsigned long *text,
-			 unsigned long *data, unsigned long *resident)
+			 unsigned long *data, unsigned long *resident,
+			 unsigned long *max_rss)
 {
 	*shared = get_mm_counter(mm, MM_FILEPAGES) +
 			get_mm_counter(mm, MM_SHMEMPAGES);
@@ -99,6 +100,9 @@ unsigned long task_statm(struct mm_struct *mm,
 								>> PAGE_SHIFT;
 	*data = mm->data_vm + mm->stack_vm;
 	*resident = *shared + get_mm_counter(mm, MM_ANONPAGES);
+	*max_rss = get_mm_max_counter(mm, MM_FILEPAGES) +
+			get_mm_max_counter(mm, MM_SHMEMPAGES) +
+			get_mm_max_counter(mm, MM_ANONPAGES);
 	return mm->total_vm;
 }
 

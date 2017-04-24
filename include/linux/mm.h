@@ -1460,14 +1460,31 @@ static inline unsigned long get_mm_counter(struct mm_struct *mm, int member)
 	return (unsigned long)val;
 }
 
+static inline unsigned long get_mm_max_counter(struct mm_struct *mm, int member)
+{
+	return atomic_long_read(&mm->rss_stat.max[member]);
+}
+
 static inline void add_mm_counter(struct mm_struct *mm, int member, long value)
 {
+	long max, cur;
+
 	atomic_long_add(value, &mm->rss_stat.count[member]);
+	max = get_mm_max_counter(mm, member);
+	cur = get_mm_counter(mm, member);
+	if (max < cur)
+		atomic_long_set(&mm->rss_stat.max[member], cur);
 }
 
 static inline void inc_mm_counter(struct mm_struct *mm, int member)
 {
+	long max, cur;
+
 	atomic_long_inc(&mm->rss_stat.count[member]);
+	max = get_mm_max_counter(mm, member);
+	cur = get_mm_counter(mm, member);
+	if (max < cur)
+		atomic_long_set(&mm->rss_stat.max[member], cur);
 }
 
 static inline void dec_mm_counter(struct mm_struct *mm, int member)
