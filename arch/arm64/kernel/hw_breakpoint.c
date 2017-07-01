@@ -661,7 +661,8 @@ static int breakpoint_handler(unsigned long unused, unsigned int esr,
 		perf_bp_event(bp, regs);
 
 		/* Do we need to handle the stepping? */
-		if (is_default_overflow_handler(bp))
+		if (is_default_overflow_handler(bp) ||
+				(!user_mode(regs) && bp->overflow_handler))
 			step = 1;
 unlock:
 		rcu_read_unlock();
@@ -789,7 +790,8 @@ static int watchpoint_handler(unsigned long addr, unsigned int esr,
 		perf_bp_event(wp, regs);
 
 		/* Do we need to handle the stepping? */
-		if (is_default_overflow_handler(wp))
+		if (is_default_overflow_handler(wp) ||
+				(!user_mode(regs) && wp->overflow_handler))
 			step = 1;
 	}
 	if (min_dist > 0 && min_dist != -1) {
@@ -800,7 +802,8 @@ static int watchpoint_handler(unsigned long addr, unsigned int esr,
 		perf_bp_event(wp, regs);
 
 		/* Do we need to handle the stepping? */
-		if (is_default_overflow_handler(wp))
+		if (is_default_overflow_handler(wp) ||
+				(!user_mode(regs) && wp->overflow_handler))
 			step = 1;
 	}
 	rcu_read_unlock();
