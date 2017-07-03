@@ -33,6 +33,93 @@
 #include <asm/debug-monitors.h>
 #include <asm/system_misc.h>
 
+struct debug_log_buf {
+	u64	pt;
+	u64	syn;
+	struct timespec now;
+};
+
+#define MAX_DEBUG_LOG_COUNT	1000
+
+/*
+ * Debug point
+ * 1(el1_sync)
+ * 2(el1_irq)
+ * 3(el0_sync)
+ * 4(el0_irq)
+ * 5(el1_da)
+ * 6(el1_sp_pc)
+ * 7(el1_undef)
+ * 8(el1_inv)
+ * 9(el0_da)
+ * 10(el0_ia)
+ * 11(el0_fpsimd_acc)
+ * 12(el0_fpsimd_exc)
+ * 13(el0_sp_pc)
+ * 14(el0_undef)
+ * 15(el0_dbg)
+ * 16(el0_inv)
+ * 17(el0_irq_nacked)
+ * 18(el0_svc_nacked)
+ * 19 brk_handler
+ * 20 single_step
+ * 21 watchpoint_handler
+ * 22 reinstall_suspended_bps
+ * 23 watchpoint_handler_exit
+ * 24 do_debug_exception
+ * 25 do_debug_exception_exit
+ */
+
+static DEFINE_PER_CPU(struct debug_log_buf[MAX_DEBUG_LOG_COUNT], debug_log_events);
+static DEFINE_PER_CPU(u32, debug_log_counts);
+bool start_log_event = true;
+
+void print_debug_log_buf(void)
+{
+	u32 cpu;
+	u32 count, c;
+	struct debug_log_buf *log_buf;
+
+	if (!start_log_event)
+		return;
+
+	start_log_event = false;
+
+	for_each_possible_cpu(cpu) {
+		count = per_cpu(debug_log_counts, cpu);
+		log_buf = per_cpu(debug_log_events, cpu);
+		printk("CPU: %d Count %d\n", cpu, count);
+		/* if last log is wrong, it means we did not overflow */
+		for (c = 0; c < MAX_DEBUG_LOG_COUNT; c++) {
+			printk("%ld.%ld: event %lld syndrom %llx @cpu %d count %d\n",
+					(log_buf + c)->now.tv_sec, (log_buf + c)->now.tv_nsec,
+					(log_buf + c)->pt, (log_buf + c)->syn, cpu, c);
+		}
+	}
+}
+
+void c_log_debug_entry(u64 pt, u64 syn)
+{
+	u32 cpu;
+	u32 count;
+	struct debug_log_buf *log_buf;
+
+	if (!start_log_event)
+		return;
+
+	cpu = get_cpu();
+	count = per_cpu(debug_log_counts, cpu);
+	/* reset count when overflow */
+	if (count == MAX_DEBUG_LOG_COUNT)
+		per_cpu(debug_log_counts, cpu) = 0;
+	log_buf = per_cpu(debug_log_events, cpu);
+	(log_buf + count)->pt = pt;
+	(log_buf + count)->syn = syn;
+	(log_buf + count)->now = current_kernel_time();
+	per_cpu(debug_log_counts, cpu)++;
+	put_cpu();
+}
+
 /* Determine debug architecture. */
 u8 debug_monitors_arch(void)
 {
@@ -224,11 +311,16 @@ static void send_user_sigtrap(int si_code)
 	force_sig_info(SIGTRAP, &info, current);
 }
 
+static int ss_count;
+
 static int single_step_handler(unsigned long addr, unsigned int esr,
 			       struct pt_regs *regs)
 {
 	bool handler_found = false;
 
+	c_log_debug_entry(20, regs->pc);
+	if (ss_count++ == 2)
+		print_debug_log_buf();
 	/*
 	 * If we are stepping a pending breakpoint, call the hw_breakpoint
 	 * handler first.
@@ -308,6 +400,8 @@ static int brk_handler(unsigned long addr, unsigned int esr,
 		       struct pt_regs *regs)
 {
 	bool handler_found = false;
+
+	c_log_debug_entry(19, regs->pc);
 
 #ifdef	CONFIG_KPROBES
 	if ((esr & BRK64_ESR_MASK) == BRK64_ESR_KPROBES) {

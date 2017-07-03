@@ -750,6 +750,8 @@ static int watchpoint_handler(unsigned long addr, unsigned int esr,
 	struct arch_hw_breakpoint *info;
 	struct arch_hw_breakpoint_ctrl ctrl;
 
+	c_log_debug_entry(21, regs->pc);
+
 	slots = this_cpu_ptr(wp_on_reg);
 	debug_info = &current->thread.debug;
 
@@ -808,8 +810,10 @@ static int watchpoint_handler(unsigned long addr, unsigned int esr,
 	}
 	rcu_read_unlock();
 
-	if (!step)
+	if (!step) {
+		c_log_debug_entry(23, 1);
 		return 0;
+	}
 
 	/*
 	 * We always disable EL0 watchpoints because the kernel can
@@ -821,8 +825,10 @@ static int watchpoint_handler(unsigned long addr, unsigned int esr,
 		debug_info->wps_disabled = 1;
 
 		/* If we're already stepping a breakpoint, just return. */
-		if (debug_info->bps_disabled)
+		if (debug_info->bps_disabled) { 
+			c_log_debug_entry(23, 2);
 			return 0;
+		}
 
 		if (test_thread_flag(TIF_SINGLESTEP))
 			debug_info->suspended_step = 1;
@@ -832,8 +838,10 @@ static int watchpoint_handler(unsigned long addr, unsigned int esr,
 		toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL1, 0);
 		kernel_step = this_cpu_ptr(&stepping_kernel_bp);
 
-		if (*kernel_step != ARM_KERNEL_STEP_NONE)
+		if (*kernel_step != ARM_KERNEL_STEP_NONE) {
+			c_log_debug_entry(23, 3);
 			return 0;
+		}
 
 		if (kernel_active_single_step()) {
 			*kernel_step = ARM_KERNEL_STEP_SUSPEND;
@@ -843,6 +851,7 @@ static int watchpoint_handler(unsigned long addr, unsigned int esr,
 		}
 	}
 
+	c_log_debug_entry(23, 4);
 	return 1;
 }
 NOKPROBE_SYMBOL(watchpoint_handler);
@@ -901,6 +910,7 @@ int reinstall_suspended_bps(struct pt_regs *regs)
 		*kernel_step = ARM_KERNEL_STEP_NONE;
 	}
 
+	c_log_debug_entry(22, handled_exception);
 	return !handled_exception;
 }
 NOKPROBE_SYMBOL(reinstall_suspended_bps);

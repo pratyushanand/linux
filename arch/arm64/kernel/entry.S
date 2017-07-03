@@ -34,6 +34,97 @@
 #include <asm/asm-uaccess.h>
 #include <asm/unistd.h>
 
+	.macro log_debug_entry, pt
+	stp	x28, x29, [sp,#-64]!
+	stp	x26, x27, [sp,#-64]!
+	stp	x24, x25, [sp,#-64]!
+	stp	x22, x23, [sp,#-64]!
+	stp	x20, x21, [sp,#-64]!
+	stp	x18, x19, [sp,#-64]!
+	stp	x16, x17, [sp,#-64]!
+	stp	x14, x15, [sp,#-64]!
+	stp	x12, x13, [sp,#-64]!
+	stp	x10, x11, [sp,#-64]!
+	stp	x8, x9, [sp,#-64]!
+	stp	x6, x7, [sp,#-64]!
+	stp	x4, x5, [sp,#-64]!
+	stp	x2, x3, [sp,#-64]!
+	stp	x0, x1, [sp,#-64]!
+	stp	x29, x30, [sp,#-64]!
+	.if \pt == 1
+	mov	x0, #1
+	.endif
+	.if \pt == 2
+	mov	x0, #2
+	.endif
+	.if \pt == 3
+	mov	x0, #3
+	.endif
+	.if \pt == 4
+	mov	x0, #4
+	.endif
+	.if \pt == 5
+	mov	x0, #5
+	.endif
+	.if \pt == 6
+	mov	x0, #6
+	.endif
+	.if \pt == 7
+	mov	x0, #7
+	.endif
+	.if \pt == 8
+	mov	x0, #8
+	.endif
+	.if \pt == 9
+	mov	x0, #9
+	.endif
+	.if \pt == 10
+	mov	x0, #10
+	.endif
+	.if \pt == 11
+	mov	x0, #11
+	.endif
+	.if \pt == 12
+	mov	x0, #12
+	.endif
+	.if \pt == 13
+	mov	x0, #13
+	.endif
+	.if \pt == 14
+	mov	x0, #14
+	.endif
+	.if \pt == 15
+	mov	x0, #15
+	.endif
+	.if \pt == 16
+	mov	x0, #16
+	.endif
+	.if \pt == 17
+	mov	x0, #17
+	.endif
+	.if \pt == 18
+	mov	x0, #18
+	.endif
+	//mrs	x1, esr_el1			// read the syndrome register
+	mrs	x1, elr_el1			// return address
+	bl	c_log_debug_entry
+	ldp	x29, x30, [sp],#64
+	ldp	x0, x1, [sp],#64
+	ldp	x2, x3, [sp],#64
+	ldp	x4, x5, [sp],#64
+	ldp	x6, x7, [sp],#64
+	ldp	x8, x9, [sp],#64
+	ldp	x10, x11, [sp],#64
+	ldp	x12, x13, [sp],#64
+	ldp	x14, x15, [sp],#64
+	ldp	x16, x17, [sp],#64
+	ldp	x18, x19, [sp],#64
+	ldp	x20, x21, [sp],#64
+	ldp	x22, x23, [sp],#64
+	ldp	x24, x25, [sp],#64
+	ldp	x26, x27, [sp],#64
+	ldp	x28, x29, [sp],#64
+	.endm
 /*
  * Context tracking subsystem.  Used to instrument transitions
  * between user and kernel mode.
@@ -403,6 +494,7 @@ ENDPROC(el1_error_invalid)
 el1_sync:
 	kernel_entry 1
 	mrs	x1, esr_el1			// read the syndrome register
+	log_debug_entry 1
 	lsr	x24, x1, #ESR_ELx_EC_SHIFT	// exception class
 	cmp	x24, #ESR_ELx_EC_DABT_CUR	// data abort in EL1
 	b.eq	el1_da
@@ -429,6 +521,7 @@ el1_da:
 	 * Data abort handling
 	 */
 	mrs	x3, far_el1
+	log_debug_entry 5
 	enable_dbg
 	// re-enable interrupts if they were enabled in the aborted context
 	tbnz	x23, #7, 1f			// PSR_I_BIT
@@ -446,6 +539,7 @@ el1_sp_pc:
 	 * Stack or PC alignment exception handling
 	 */
 	mrs	x0, far_el1
+	log_debug_entry 6
 	enable_dbg
 	mov	x2, sp
 	b	do_sp_pc_abort
@@ -453,6 +547,7 @@ el1_undef:
 	/*
 	 * Undefined instruction
 	 */
+	log_debug_entry 7
 	enable_dbg
 	mov	x0, sp
 	b	do_undefinstr
@@ -466,9 +561,15 @@ el1_dbg:
 	mrs	x0, far_el1
 	mov	x2, sp				// struct pt_regs
 	bl	do_debug_exception
+	cmp	x0, #0
+	b.eq	el1_dbg_exit
+	disable_irq
+el1_dbg_exit:
+	enable_irq
 	kernel_exit 1
 el1_inv:
 	// TODO: add support for undefined instructions in kernel mode
+	log_debug_entry 8
 	enable_dbg
 	mov	x0, sp
 	mov	x2, x1
@@ -479,6 +580,7 @@ ENDPROC(el1_sync)
 	.align	6
 el1_irq:
 	kernel_entry 1
+	log_debug_entry 2
 	enable_dbg
 #ifdef CONFIG_TRACE_IRQFLAGS
 	bl	trace_hardirqs_off
@@ -516,6 +618,7 @@ el1_preempt:
 el0_sync:
 	kernel_entry 0
 	mrs	x25, esr_el1			// read the syndrome register
+	log_debug_entry 3
 	lsr	x24, x25, #ESR_ELx_EC_SHIFT	// exception class
 	cmp	x24, #ESR_ELx_EC_SVC64		// SVC in 64-bit state
 	b.eq	el0_svc
@@ -593,6 +696,7 @@ el0_da:
 	 */
 	mrs	x26, far_el1
 	// enable interrupts before calling the main handler
+	log_debug_entry 9
 	enable_dbg_and_irq
 	ct_user_exit
 	clear_address_tag x0, x26
@@ -606,6 +710,7 @@ el0_ia:
 	 */
 	mrs	x26, far_el1
 	// enable interrupts before calling the main handler
+	log_debug_entry 10
 	enable_dbg_and_irq
 	ct_user_exit
 	mov	x0, x26
@@ -617,6 +722,7 @@ el0_fpsimd_acc:
 	/*
 	 * Floating Point or Advanced SIMD access
 	 */
+	log_debug_entry 11
 	enable_dbg
 	ct_user_exit
 	mov	x0, x25
@@ -627,6 +733,7 @@ el0_fpsimd_exc:
 	/*
 	 * Floating Point or Advanced SIMD exception
 	 */
+	log_debug_entry 12
 	enable_dbg
 	ct_user_exit
 	mov	x0, x25
@@ -639,6 +746,7 @@ el0_sp_pc:
 	 */
 	mrs	x26, far_el1
 	// enable interrupts before calling the main handler
+	log_debug_entry 13
 	enable_dbg_and_irq
 	ct_user_exit
 	mov	x0, x26
@@ -651,6 +759,7 @@ el0_undef:
 	 * Undefined instruction
 	 */
 	// enable interrupts before calling the main handler
+	log_debug_entry 14
 	enable_dbg_and_irq
 	ct_user_exit
 	mov	x0, sp
@@ -675,10 +784,17 @@ el0_dbg:
 	mov	x1, x25
 	mov	x2, sp
 	bl	do_debug_exception
+	cmp	x0, #0
+	b.eq	el0_dbg_exit
+	disable_irq
+el0_dbg_exit:
+	enable_irq
+	log_debug_entry 15
 	enable_dbg
 	ct_user_exit
 	b	ret_to_user
 el0_inv:
+	log_debug_entry 16
 	enable_dbg
 	ct_user_exit
 	mov	x0, sp
@@ -691,7 +807,9 @@ ENDPROC(el0_sync)
 	.align	6
 el0_irq:
 	kernel_entry 0
+	//log_debug_entry 4
 el0_irq_naked:
+	log_debug_entry 17
 	enable_dbg
 #ifdef CONFIG_TRACE_IRQFLAGS
 	bl	trace_hardirqs_off
@@ -802,6 +920,7 @@ el0_svc:
 	mov	sc_nr, #__NR_syscalls
 el0_svc_naked:					// compat entry point
 	stp	x0, scno, [sp, #S_ORIG_X0]	// save the original x0 and syscall number
+	log_debug_entry 18
 	enable_dbg_and_irq
 	ct_user_exit 1
 

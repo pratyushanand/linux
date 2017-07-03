@@ -683,6 +683,7 @@ asmlinkage int __exception do_debug_exception(unsigned long addr,
 	int rv;
 	bool *irq_en_needed = this_cpu_ptr(&irq_enable_needed);
 
+	c_log_debug_entry(24, regs->pc);
 	/*
 	 * Tell lockdep we disabled irqs in entry.S. Do nothing if they were
 	 * already disabled to preserve the last enabled/disabled addresses.
@@ -711,6 +712,7 @@ asmlinkage int __exception do_debug_exception(unsigned long addr,
 	if (interrupts_enabled(regs))
 		trace_hardirqs_on();
 
+	c_log_debug_entry(25, regs->pc);
 	return rv;
 }
 NOKPROBE_SYMBOL(do_debug_exception);

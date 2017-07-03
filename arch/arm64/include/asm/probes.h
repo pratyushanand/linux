@@ -18,6 +18,9 @@
 typedef u32 probe_opcode_t;
 typedef void (probes_handler_t) (u32 opcode, long addr, struct pt_regs *);
 
+void print_debug_log_buf(void);
+void c_log_debug_entry(u64 pt, u64 syn);
+
 /* architecture specific copy of original instruction */
 struct arch_probe_insn {
 	probe_opcode_t *insn;
