@@ -492,13 +492,14 @@ EXPORT_SYMBOL_GPL(unregister_hw_breakpoint);
  * register_wide_hw_breakpoint - register a wide breakpoint in the kernel
  * @attr: breakpoint attributes
  * @triggered: callback to trigger when we hit the breakpoint
+ * @step: tells if framework can use default arch step handler
  *
  * @return a set of per_cpu pointers to perf events
  */
 struct perf_event * __percpu *
 register_wide_hw_breakpoint(struct perf_event_attr *attr,
 			    perf_overflow_handler_t triggered,
-			    void *context)
+			    void *context, int step)
 {
 	struct perf_event * __percpu *cpu_events, *bp;
 	long err = 0;
@@ -512,6 +513,7 @@ register_wide_hw_breakpoint(struct perf_event_attr *attr,
 	for_each_online_cpu(cpu) {
 		bp = perf_event_create_kernel_counter(attr, cpu, NULL,
 						      triggered, context);
+		bp->hw.step_needed = step;
 		if (IS_ERR(bp)) {
 			err = PTR_ERR(bp);
 			break;

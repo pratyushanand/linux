@@ -71,7 +71,7 @@ register_wide_hw_breakpoint_cpu(struct perf_event_attr *attr,
 extern struct perf_event * __percpu *
 register_wide_hw_breakpoint(struct perf_event_attr *attr,
 			    perf_overflow_handler_t triggered,
-			    void *context);
+			    void *context, int step);
 
 extern int register_perf_hw_breakpoint(struct perf_event *bp);
 extern int __register_perf_hw_breakpoint(struct perf_event *bp);
@@ -110,7 +110,7 @@ register_wide_hw_breakpoint_cpu(struct perf_event_attr *attr,
 static inline struct perf_event * __percpu *
 register_wide_hw_breakpoint(struct perf_event_attr *attr,
 			    perf_overflow_handler_t triggered,
-			    void *context)		{ return NULL; }
+			    void *context, int step)	{ return NULL; }
 static inline int
 register_perf_hw_breakpoint(struct perf_event *bp)	{ return -ENOSYS; }
 static inline int
