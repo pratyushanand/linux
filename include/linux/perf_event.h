@@ -233,6 +233,12 @@ struct hw_perf_event {
 	 */
 	u64				freq_time_stamp;
 	u64				freq_count_stamp;
+	/*
+	 * A HW breakpoint user can either have it's own step handling
+	 * mechanism or it can use default step handling meachanism defined
+	 * by arch code. Set step_needed to use default mechanism.
+	 */
+	int				step_needed;
 #endif
 };
 
