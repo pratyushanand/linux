@@ -673,6 +673,8 @@ static const struct fault_info fault_info[] = {
 	{ do_bad,		SIGBUS,  0,		"unknown 63"			},
 };
 
+static DEFINE_PER_CPU(bool, irq_enable_needed);
+
 /*
  * Handle Synchronous External Aborts that occur in a guest kernel.
  *
@@ -698,6 +700,12 @@ asmlinkage void __exception do_mem_abort(unsigned long addr, unsigned int esr,
 {
 	const struct fault_info *inf = esr_to_fault_info(esr);
 	struct siginfo info;
+	bool *irq_en_needed = this_cpu_ptr(&irq_enable_needed);
+
+	if (*irq_en_needed) {
+		regs->pstate &= ~PSR_I_BIT;
+		*irq_en_needed = false;
+	}
 
 	if (!inf->fn(addr, esr, regs))
 		return;
@@ -772,8 +780,6 @@ void __init hook_debug_fault_code(int nr,
 	debug_fault_info[nr].code	= code;
 	debug_fault_info[nr].name	= name;
 }
-
-static DEFINE_PER_CPU(bool, irq_enable_needed);
 
 asmlinkage int __exception do_debug_exception(unsigned long addr,
 					      unsigned int esr,
