@@ -630,4 +630,4 @@ __init static int init_hwlat_tracer(void)
 
 	return 0;
 }
-late_initcall(init_hwlat_tracer);
+core_initcall(init_hwlat_tracer);
