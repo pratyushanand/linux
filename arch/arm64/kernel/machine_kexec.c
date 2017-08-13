@@ -324,6 +324,11 @@ bool crash_is_nosave(unsigned long pfn)
 
 	/* in reserved memory? */
 	addr = __pfn_to_phys(pfn);
+
+	if (crashk_low_res.end && crashk_low_res.start <= addr &&
+		crashk_low_res.end >= addr)
+		return true;
+
 	if ((addr < crashk_res.start) || (crashk_res.end < addr))
 		return false;
 

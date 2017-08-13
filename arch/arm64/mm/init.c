@@ -62,6 +62,9 @@
 s64 memstart_addr __ro_after_init = -1;
 phys_addr_t arm64_dma_phys_limit __ro_after_init;
 
+/* keep default low mem size for crash kernel as 256M */
+#define	ARM64_LOW_MEM_SIZE_DEFAULT (256 << 20)
+
 #ifdef CONFIG_BLK_DEV_INITRD
 static int __init early_initrd(char *p)
 {
@@ -81,6 +84,66 @@ early_param("initrd", early_initrd);
 #endif
 
 #ifdef CONFIG_KEXEC_CORE
+
+static int __init is_crash_base_ok(unsigned long long crash_base,
+					unsigned long long crash_size)
+{
+	/* User specifies base address explicitly. */
+	if (!memblock_is_region_memory(crash_base, crash_size)) {
+		pr_warn("cannot reserve crashkernel: region is not memory\n");
+		return 0;
+	}
+
+	if (memblock_is_region_reserved(crash_base, crash_size)) {
+		pr_warn("cannot reserve crashkernel: region overlaps reserved memory\n");
+		return 0;
+	}
+
+	if (!IS_ALIGNED(crash_base, SZ_2M)) {
+		pr_warn("cannot reserve crashkernel: base address is not 2MB aligned\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int __init reserve_crashkernel_low(void)
+{
+	unsigned long long low_base, low_size;
+
+	if (parse_crashkernel_low(boot_command_line, ARCH_LOW_ADDRESS_LIMIT,
+					&low_size, &low_base))
+		low_size = ARM64_LOW_MEM_SIZE_DEFAULT;
+
+	if (low_base == 0) {
+		low_base = memblock_find_in_range(0, ARCH_LOW_ADDRESS_LIMIT,
+				low_size, SZ_2M);
+		if (!low_base) {
+			pr_err("Cannot find %ldMB crashkernel low memory.\n",
+					(unsigned long)(low_size >> 20));
+			return -ENOMEM;
+		}
+	} else {
+		if (!is_crash_base_ok(low_base, low_size))
+			return -EINVAL;
+	}
+
+	if (memblock_reserve(low_base, low_size)) {
+		pr_err("Cannot reserve %ldMB crashkernel low memory.\n",
+				(unsigned long)(low_size >> 20));
+		return -ENOMEM;
+	}
+
+	pr_info("Reserved %ldMB of low memory at %ldMB for crashkernel\n",
+			(unsigned long)(low_size >> 20),
+			(unsigned long)(low_base >> 20));
+
+	crashk_low_res.start = low_base;
+	crashk_low_res.end   = low_base + low_size - 1;
+
+	return 0;
+}
+
 /*
  * reserve_crashkernel() - reserves memory for crash kernel
  *
@@ -95,6 +158,11 @@ static void __init reserve_crashkernel(void)
 
 	ret = parse_crashkernel(boot_command_line, memblock_phys_mem_size(),
 				&crash_size, &crash_base);
+	/* crashkernel=X,high */
+	if (ret || !crash_size)
+		ret = parse_crashkernel_high(boot_command_line,
+					     memblock_phys_mem_size(),
+					     &crash_size, &crash_base);
 	/* no crashkernel= or invalid value specified */
 	if (ret || !crash_size)
 		return;
@@ -105,32 +173,27 @@ static void __init reserve_crashkernel(void)
 		/* Current arm64 boot protocol requires 2MB alignment */
 		crash_base = memblock_find_in_range(0, ARCH_LOW_ADDRESS_LIMIT,
 				crash_size, SZ_2M);
+		if (crash_base == 0 && IS_ENABLED(CONFIG_ZONE_DMA))
+			crash_base = memblock_find_in_range(0, PHYS_MASK,
+				crash_size, SZ_2M);
 		if (crash_base == 0) {
 			pr_warn("cannot allocate crashkernel (size:0x%llx)\n",
 				crash_size);
 			return;
 		}
 	} else {
-		/* User specifies base address explicitly. */
-		if (!memblock_is_region_memory(crash_base, crash_size)) {
-			pr_warn("cannot reserve crashkernel: region is not memory\n");
+		if (!is_crash_base_ok(crash_base, crash_size))
 			return;
-		}
-
-		if (memblock_is_region_reserved(crash_base, crash_size)) {
-			pr_warn("cannot reserve crashkernel: region overlaps reserved memory\n");
-			return;
-		}
-
-		if (!IS_ALIGNED(crash_base, SZ_2M)) {
-			pr_warn("cannot reserve crashkernel: base address is not 2MB aligned\n");
-			return;
-		}
 	}
 	memblock_reserve(crash_base, crash_size);
 
 	pr_info("crashkernel reserved: 0x%016llx - 0x%016llx (%lld MB)\n",
 		crash_base, crash_base + crash_size, crash_size >> 20);
+
+	if (crash_base > ARCH_LOW_ADDRESS_LIMIT && reserve_crashkernel_low()) {
+		memblock_free(crash_base, crash_size);
+		return;
+	}
 
 	crashk_res.start = crash_base;
 	crashk_res.end = crash_base + crash_size - 1;
@@ -150,6 +213,15 @@ static void __init kexec_reserve_crashkres_pages(void)
 	 * marked as Reserved initially.
 	 */
 	for (addr = crashk_res.start; addr < (crashk_res.end + 1);
+			addr += PAGE_SIZE) {
+		page = phys_to_page(addr);
+		SetPageReserved(page);
+	}
+
+	if (!crashk_low_res.end)
+		return;
+
+	for (addr = crashk_low_res.start; addr < (crashk_low_res.end + 1);
 			addr += PAGE_SIZE) {
 		page = phys_to_page(addr);
 		SetPageReserved(page);
