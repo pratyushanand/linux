@@ -81,6 +81,14 @@ While this property does not represent a real hardware, the address
 and the size are expressed in #address-cells and #size-cells,
 respectively, of the root node.
 
+linux,usable-low-memory-range
+-----------------------------
+
+This property is similar to "linux,usable-memory-range" and is valid for
+arm64 only. It is needed if memory represented by
+"linux,usable-memory-range" is not DMAable. It describes another chunk of
+memory which crash kernel can use for ZONE_DMA.
+
 linux,elfcorehdr
 ----------------
 
